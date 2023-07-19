@@ -16,7 +16,6 @@ for such a notice.
 //* EXTERNAL LIBRARIES
 #include "HKD_IMU.h"
 #include <Arduino.h>
-// #include <Deneyap_6EksenAtaletselOlcumBirimi.h>
 
 IMU::IMU() = default;
 

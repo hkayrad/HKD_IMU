@@ -23,7 +23,8 @@ class IMU {
 public:
   IMU();
 
-  LSM6DSM IntegratedIMU; // Create IMU object from Deneyap_6EksenAtaletselOlcumBirimi.h
+  LSM6DSM IntegratedIMU; // Create IMU object from
+                         // Deneyap_6EksenAtaletselOlcumBirimi.h
 
   const float g = 9.80665; // Gravitational acceleration [m/s^2];
 
