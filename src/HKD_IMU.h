@@ -19,9 +19,11 @@ for such a notice.
 //* EXTERNAL LIBRARIES
 #include <Deneyap_6EksenAtaletselOlcumBirimi.h>
 
-class IMUVals {
+class IMU {
 public:
-  IMUVals();
+  IMU();
+
+  LSM6DSM IntegratedIMU; // Create IMU object from Deneyap_6EksenAtaletselOlcumBirimi.h
 
   const float g = 9.80665; // Gravitational acceleration [m/s^2];
 
@@ -31,14 +33,14 @@ public:
                                  // North-South, Z: Up-Down
   float *angleRP = new float[2]; // Angle values //? P: Pitch, R: Roll
 
-  void startIMU(LSM6DSM);
+  //? Runs once
+  void startIMU(int);
+  void calibrateGyro(int);
 
-  void calibrateGyro(LSM6DSM);
+  //? Can run indefinitely
   void calculateAngle();
-
-  void readValues(LSM6DSM);
-
-  void plotValuesToThePlotter(LSM6DSM);
+  void readValues();
+  void plotValuesToThePlotter();
 };
 
 #endif

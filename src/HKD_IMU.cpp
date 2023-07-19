@@ -18,14 +18,21 @@ for such a notice.
 #include <Arduino.h>
 // #include <Deneyap_6EksenAtaletselOlcumBirimi.h>
 
-IMUVals::IMUVals() = default;
+IMU::IMU() = default;
 
-void IMU
+void IMU::startIMU(int calibrationDelay) {
+  while (IntegratedIMU.begin() != IMU_SUCCESS) { // Check if IMU is connected
+    Serial.println("IMU connection failed");
+    delay(500);
+  }
 
-void IMUVals::calibrateGyro(LSM6DSM IMU) {
+  calibrateGyro(calibrationDelay); // Calibrate gyro
+}
+
+void IMU::calibrateGyro(int calibrationDelay) {
 
   Serial.println("Gyro calibration will start please don't touch the plane");
-  delay(1500);
+  delay(calibrationDelay);
   Serial.println("Gyro calibration started");
 
   int gyroCalibrationIteration;
@@ -37,7 +44,7 @@ void IMUVals::calibrateGyro(LSM6DSM IMU) {
   for (gyroCalibrationIteration = 0; gyroCalibrationIteration < 2000;
        gyroCalibrationIteration++) {
     float *allAxesFloatData = new float[7]; // All axes float values
-    IMU.readAllAxesFloatData(allAxesFloatData);
+    IntegratedIMU.readAllAxesFloatData(allAxesFloatData);
     for (int i = 0; i < 3;
          i++) { // Assign values to their corresponding variables
       gyroErrorPRY[i] += allAxesFloatData[i];
@@ -53,7 +60,7 @@ void IMUVals::calibrateGyro(LSM6DSM IMU) {
   Serial.println("Gyro calibration finished");
 }
 
-void IMUVals::calculateAngle() {
+void IMU::calculateAngle() {
   angleRP[1] =
       atan(accel[1] / (sqrt(accel[0] * accel[0] + accel[2] * accel[2]))) * 180 /
       PI;
@@ -62,9 +69,9 @@ void IMUVals::calculateAngle() {
       180 / PI;
 }
 
-void IMUVals::readValues(LSM6DSM IMU) {
+void IMU::readValues() {
   float *allAxesFloatData = new float[7]; // All axes float values
-  IMU.readAllAxesFloatData(allAxesFloatData);
+  IntegratedIMU.readAllAxesFloatData(allAxesFloatData);
   for (int i = 0; i < 3;
        i++) { // Assign values to their corresponding variables
     gyroPRY[i] = ((allAxesFloatData[i] - //! Primitive error filtering
@@ -83,8 +90,7 @@ void IMUVals::readValues(LSM6DSM IMU) {
   delete[] allAxesFloatData; // Free the memory of allAxes
 }
 
-void IMUVals::plotValuesToThePlotter(
-    LSM6DSM IMU) { // Plot values to the plotter
+void IMU::plotValuesToThePlotter() { // Plot values to the plotter
   Serial.println(">Gyro Pitch [°/s]: " + String(gyroPRY[0]));
   Serial.println(">Gyro Roll [°/s]: " + String(gyroPRY[1]));
   Serial.println(">Gyro Yaw [°/s]: " + String(gyroPRY[2]));
