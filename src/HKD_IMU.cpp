@@ -18,6 +18,7 @@ for such a notice.
 #include <Arduino.h>
 
 IMU::IMU() = default;
+KalmanFilter kalmanFilter;
 
 void IMU::startIMU(int calibrationDelay) {
   while (IntegratedIMU.begin() != IMU_SUCCESS) { // Check if IMU is connected
@@ -60,11 +61,11 @@ void IMU::calibrateGyro(int calibrationDelay) {
 }
 
 void IMU::calculateAngle() {
-  angleRP[1] =
-      atan(accel[1] / (sqrt(accel[0] * accel[0] + accel[2] * accel[2]))) * 180 /
+  anglePR[0] =
+      atan(accelG[1] / (sqrt(accelG[0] * accelG[0] + accelG[2] * accelG[2]))) * 180 /
       PI;
-  angleRP[0] =
-      -atan(accel[0] / (sqrt(accel[1] * accel[1] + accel[2] * accel[2]))) *
+  anglePR[1] =
+      -atan(accelG[0] / (sqrt(accelG[1] * accelG[1] + accelG[2] * accelG[2]))) *
       180 / PI;
 }
 
@@ -80,11 +81,23 @@ void IMU::readValues() {
                    gyroErrorPRY[i]) < -0.25)
                      ? allAxesFloatData[i] - gyroErrorPRY[i]
                      : 0;
-    accel[i] = (allAxesFloatData[i + 3]); // Error correction & Multiply accel
-                                          // values with g
+    accelG[i] = (allAxesFloatData[i + 3]); // Error correction
+    accelMps2[i] = accelG[i] * g;          // Convert acceleration to m/s^2
   }
 
   calculateAngle();
+
+  kalmanFilter.kalman_1d(kalmanFilter.KalmanAnglePR[0],
+                         kalmanFilter.KalmanUncertainityAnglePR[0], gyroPRY[0],
+                         anglePR[0]);
+  kalmanFilter.KalmanAnglePR[0] = kalmanFilter.Kalman1DOutput[0];
+  kalmanFilter.KalmanUncertainityAnglePR[0] = kalmanFilter.Kalman1DOutput[1];
+
+  kalmanFilter.kalman_1d(kalmanFilter.KalmanAnglePR[1],
+                         kalmanFilter.KalmanUncertainityAnglePR[1], gyroPRY[1],
+                         anglePR[1]);
+  kalmanFilter.KalmanAnglePR[1] = kalmanFilter.Kalman1DOutput[0];
+  kalmanFilter.KalmanUncertainityAnglePR[1] = kalmanFilter.Kalman1DOutput[1];
 
   delete[] allAxesFloatData; // Free the memory of allAxes
 }
@@ -93,9 +106,13 @@ void IMU::plotValuesToThePlotter() { // Plot values to the plotter
   Serial.println(">Gyro Pitch [°/s]: " + String(gyroPRY[0]));
   Serial.println(">Gyro Roll [°/s]: " + String(gyroPRY[1]));
   Serial.println(">Gyro Yaw [°/s]: " + String(gyroPRY[2]));
-  Serial.println(">Accel X [m/s^2]: " + String(accel[0]));
-  Serial.println(">Accel Y [m/s^2]: " + String(accel[1]));
-  Serial.println(">Accel Z [m/s^2]: " + String(accel[2]));
-  Serial.println(">Angle Roll [°]: " + String(angleRP[0]));
-  Serial.println(">Angle Pitch [°]: " + String(angleRP[1]));
+  Serial.println(">Accel X [m/s^2]: " + String(accelMps2[0]));
+  Serial.println(">Accel Y [m/s^2]: " + String(accelMps2[1]));
+  Serial.println(">Accel Z [m/s^2]: " + String(accelMps2[2]));
+  Serial.println(">Angle Pitch [°]: " + String(anglePR[0]));
+  Serial.println(">Angle Roll [°]: " + String(anglePR[1]));
+  Serial.println(">Kalman Angle Pitch [°]: " +
+                 String(kalmanFilter.KalmanAnglePR[0]));
+  Serial.println(">Kalman Angle Roll [°]: " +
+                 String(kalmanFilter.KalmanAnglePR[1]));
 }

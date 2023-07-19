@@ -19,6 +19,9 @@ for such a notice.
 //* EXTERNAL LIBRARIES
 #include <Deneyap_6EksenAtaletselOlcumBirimi.h>
 
+//* LOCAL LIBRARIES
+#include "HKD_KalmanFilter.h"
+
 class IMU {
 public:
   IMU();
@@ -26,22 +29,26 @@ public:
   LSM6DSM IntegratedIMU; // Create IMU object from
                          // Deneyap_6EksenAtaletselOlcumBirimi.h
 
-  const float g = 9.80665; // Gravitational acceleration [m/s^2];
-
-  float *gyroPRY = new float[3]; // Gyro values //? P: Pitch, R: Roll, Y: Yaw
+  float *gyroPRY =
+      new float[3]; // Gyro values //? P: Pitch, R: Roll, Y: Yaw, Units: deg/s
   float *gyroErrorPRY = new float[3]; // Gyro error values
-  float *accel = new float[3];   // Acceleration values //? X: East-West, Y:
-                                 // North-South, Z: Up-Down
-  float *angleRP = new float[2]; // Angle values //? P: Pitch, R: Roll
+  float *accelG = new float[3];    // Acceleration values //? X: East-West, Y:
+                                   //? North-South, Z: Up-Down, Units: g
+  float *accelMps2 = new float[3]; //? Units: m/s^2
+  float *anglePR =
+      new float[2]; // Angle values //? P: Pitch, R: Roll, Units: deg
 
   //? Runs once
   void startIMU(int);
-  void calibrateGyro(int);
 
   //? Can run indefinitely
-  void calculateAngle();
   void readValues();
   void plotValuesToThePlotter();
+
+private:
+  void calibrateGyro(int);
+  void calculateAngle();
+  const float g = 9.80665; // Gravitational acceleration [m/s^2];
 };
 
 #endif

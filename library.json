@@ -1,0 +1,28 @@
+{
+  "name": "HKD_IMU",
+  "version": "0.0.3",
+  "description": "An IMU program for NG-Plane",
+  "keywords": "IMU, deneyap, HKD, Kalman, Filter",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/hkdLibs/HKD_IMU.git"
+  },
+  "authors":
+  [
+    {
+      "name": "Hakan Kayra Doğan",
+      "email": "me@hkayrad.me",
+      "url": "https://hkayrad.me/contact",
+			"maintainer": true
+    }
+  ],
+  "license": "MIT",
+  "homepage": "*",
+  "dependencies": {
+			"deneyap": "Deneyap_6EksenAtaletselOlcumBirimi.h",
+			"hkayrad": "HKDKalmanFilter.h"
+  },
+  "frameworks": "*",
+  "platforms": "*"
+}
