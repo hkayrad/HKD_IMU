@@ -35,7 +35,7 @@ void IMU::calibrateGyro(int calibrationDelay) {
   delay(calibrationDelay);
   Serial.println("Gyro calibration started");
 
-  int gyroCalibrationIteration;
+  int gyroCalibrationIteration = 0;
 
   for (int i = 0; i < 3; i++) { // Set gyro error values to 0
     gyroErrorPRY[i] = 0;
@@ -70,6 +70,7 @@ void IMU::calculateAngle() {
 }
 
 void IMU::readValues() {
+  // Gyro & Accelerometer
   float *allAxesFloatData = new float[7]; // All axes float values
   IntegratedIMU.readAllAxesFloatData(allAxesFloatData);
   for (int i = 0; i < 3;
@@ -100,6 +101,11 @@ void IMU::readValues() {
   kalmanFilter.KalmanUncertainityAnglePR[1] = kalmanFilter.Kalman1DOutput[1];
 
   delete[] allAxesFloatData; // Free the memory of allAxes
+
+  // Magnetometer
+  //magnetometerXYZ[0] = Magnetometer.readMagnetometerX();
+  //magnetometerXYZ[1] = Magnetometer.readMagnetometerY();
+  //magnetometerXYZ[2] = Magnetometer.readMagnetometerZ();
 }
 
 void IMU::plotValuesToThePlotter() { // Plot values to the plotter
@@ -115,4 +121,7 @@ void IMU::plotValuesToThePlotter() { // Plot values to the plotter
                  String(kalmanFilter.KalmanAnglePR[0]));
   Serial.println(">Kalman Angle Roll [°]: " +
                  String(kalmanFilter.KalmanAnglePR[1]));
+  //Serial.println(">Magnetometer X [mG]: " + String(magnetometerXYZ[0]));
+  //Serial.println(">Magnetometer Y [mG]: " + String(magnetometerXYZ[1]));
+  //Serial.println(">Magnetometer Z [mG]: " + String(magnetometerXYZ[2]));
 }

@@ -18,6 +18,7 @@ for such a notice.
 
 //* EXTERNAL LIBRARIES
 #include <Deneyap_6EksenAtaletselOlcumBirimi.h>
+//#include <Deneyap_9EksenAtaletselOlcumBirimi.h>
 
 //* LOCAL LIBRARIES
 #include "HKD_KalmanFilter.h"
@@ -28,6 +29,8 @@ public:
 
   LSM6DSM IntegratedIMU; // Create IMU object from
                          // Deneyap_6EksenAtaletselOlcumBirimi.h
+  //MAGNETOMETER Magnetometer; // Create Magnetometer object from
+                             // Deneyap_9EksenAtaletselOlcumBirimi.h
 
   float *gyroPRY =
       new float[3]; // Gyro values //? P: Pitch, R: Roll, Y: Yaw, Units: deg/s
@@ -37,6 +40,7 @@ public:
   float *accelMps2 = new float[3]; //? Units: m/s^2
   float *anglePR =
       new float[2]; // Angle values //? P: Pitch, R: Roll, Units: deg
+  //float *magnetometerXYZ = new float[3]; // Magnetometer values
 
   //? Runs once
   void startIMU(int);
