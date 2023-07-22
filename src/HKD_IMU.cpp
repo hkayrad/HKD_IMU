@@ -26,7 +26,17 @@ void IMU::startIMU(int calibrationDelay) {
     delay(500);
   }
 
-  calibrateGyro(calibrationDelay); // Calibrate gyro
+  calibrateGyro(calibrationDelay);    // Calibrate gyro
+  initMagnetometer(calibrationDelay); // Initialize magnetometer
+
+  anglePRY[2] = 0; // Set yaw angle to 0
+}
+
+void IMU::initMagnetometer(int calibrationDelay) {
+  while (!Magnetometer.begin(0x60)) {
+    Serial.println("Magnetometer connection failed");
+    delay(calibrationDelay);
+  }
 }
 
 void IMU::calibrateGyro(int calibrationDelay) {
@@ -61,25 +71,43 @@ void IMU::calibrateGyro(int calibrationDelay) {
 }
 
 void IMU::calculateAngle() {
-  anglePR[0] =
-      atan(accelG[1] / (sqrt(accelG[0] * accelG[0] + accelG[2] * accelG[2]))) * 180 /
-      PI;
-  anglePR[1] =
+  anglePRY[0] =
+      atan(accelG[1] / (sqrt(accelG[0] * accelG[0] + accelG[2] * accelG[2]))) *
+      180 / PI;
+  anglePRY[1] =
       -atan(accelG[0] / (sqrt(accelG[1] * accelG[1] + accelG[2] * accelG[2]))) *
       180 / PI;
+
+  unsigned long tNew = millis();
+  float dt = (tNew - tZero) * 1e-3;
+  tZero = tNew;
+  anglePRY[2] += gyroPRY[2] * dt * 38.5;
+      /*
+        mag_x = magReadX*cos(pitch) + magReadY*sin(roll)*sin(pitch) +
+        magReadZ*cos(roll)*sin(pitch)
+        mag_y = magReadY * cos(roll) - magReadZ * sin(roll)
+        yaw = 180 * atan2(-mag_y,mag_x)/M_PI;
+      */
+
+      // Magnetometer
+      Magnetometer.RegRead();
+  magnetometerXYZ[0] = Magnetometer.readMagnetometerX();
+  magnetometerXYZ[1] = Magnetometer.readMagnetometerY();
+  magnetometerXYZ[2] = Magnetometer.readMagnetometerZ();
 }
 
 void IMU::readValues() {
+  tZero = millis();
   // Gyro & Accelerometer
   float *allAxesFloatData = new float[7]; // All axes float values
   IntegratedIMU.readAllAxesFloatData(allAxesFloatData);
   for (int i = 0; i < 3;
        i++) { // Assign values to their corresponding variables
     gyroPRY[i] = ((allAxesFloatData[i] - //! Primitive error filtering
-                   gyroErrorPRY[i]) > 0.25 ||
+                   gyroErrorPRY[i]) > 1 ||
                   (allAxesFloatData[i] - // TODO: Change this filtering with a
                                          // kalman filter
-                   gyroErrorPRY[i]) < -0.25)
+                   gyroErrorPRY[i]) < -1)
                      ? allAxesFloatData[i] - gyroErrorPRY[i]
                      : 0;
     accelG[i] = (allAxesFloatData[i + 3]); // Error correction
@@ -90,22 +118,17 @@ void IMU::readValues() {
 
   kalmanFilter.kalman_1d(kalmanFilter.KalmanAnglePR[0],
                          kalmanFilter.KalmanUncertainityAnglePR[0], gyroPRY[0],
-                         anglePR[0]);
+                         anglePRY[0]);
   kalmanFilter.KalmanAnglePR[0] = kalmanFilter.Kalman1DOutput[0];
   kalmanFilter.KalmanUncertainityAnglePR[0] = kalmanFilter.Kalman1DOutput[1];
 
   kalmanFilter.kalman_1d(kalmanFilter.KalmanAnglePR[1],
                          kalmanFilter.KalmanUncertainityAnglePR[1], gyroPRY[1],
-                         anglePR[1]);
+                         anglePRY[1]);
   kalmanFilter.KalmanAnglePR[1] = kalmanFilter.Kalman1DOutput[0];
   kalmanFilter.KalmanUncertainityAnglePR[1] = kalmanFilter.Kalman1DOutput[1];
 
   delete[] allAxesFloatData; // Free the memory of allAxes
-
-  // Magnetometer
-  //magnetometerXYZ[0] = Magnetometer.readMagnetometerX();
-  //magnetometerXYZ[1] = Magnetometer.readMagnetometerY();
-  //magnetometerXYZ[2] = Magnetometer.readMagnetometerZ();
 }
 
 void IMU::plotValuesToThePlotter() { // Plot values to the plotter
@@ -115,13 +138,14 @@ void IMU::plotValuesToThePlotter() { // Plot values to the plotter
   Serial.println(">Accel X [m/s^2]: " + String(accelMps2[0]));
   Serial.println(">Accel Y [m/s^2]: " + String(accelMps2[1]));
   Serial.println(">Accel Z [m/s^2]: " + String(accelMps2[2]));
-  Serial.println(">Angle Pitch [°]: " + String(anglePR[0]));
-  Serial.println(">Angle Roll [°]: " + String(anglePR[1]));
+  Serial.println(">Angle Pitch [°]: " + String(anglePRY[0]));
+  Serial.println(">Angle Roll [°]: " + String(anglePRY[1]));
+  Serial.println(">Angle Yaw [°]: " + String(anglePRY[2]));
   Serial.println(">Kalman Angle Pitch [°]: " +
                  String(kalmanFilter.KalmanAnglePR[0]));
   Serial.println(">Kalman Angle Roll [°]: " +
                  String(kalmanFilter.KalmanAnglePR[1]));
-  //Serial.println(">Magnetometer X [mG]: " + String(magnetometerXYZ[0]));
-  //Serial.println(">Magnetometer Y [mG]: " + String(magnetometerXYZ[1]));
-  //Serial.println(">Magnetometer Z [mG]: " + String(magnetometerXYZ[2]));
+  Serial.println(">Magnetometer X [mG]: " + String(magnetometerXYZ[0]));
+  Serial.println(">Magnetometer Y [mG]: " + String(magnetometerXYZ[1]));
+  Serial.println(">Magnetometer Z [mG]: " + String(magnetometerXYZ[2]));
 }
