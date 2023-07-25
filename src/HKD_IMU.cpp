@@ -77,23 +77,39 @@ void IMU::calculateAngle() {
   anglePRY[1] =
       -atan(accelG[0] / (sqrt(accelG[1] * accelG[1] + accelG[2] * accelG[2]))) *
       180 / PI;
+  /*
+    mag_x = magReadX*cos(pitch) + magReadY*sin(roll)*sin(pitch) +
+    magReadZ*cos(roll)*sin(pitch)
+    mag_y = magReadY * cos(roll) - magReadZ * sin(roll)
+    yaw = 180 * atan2(-mag_y,mag_x)/M_PI;
+  */
 
-  unsigned long tNew = millis();
-  float dt = (tNew - tZero) * 1e-3;
-  tZero = tNew;
-  anglePRY[2] += gyroPRY[2] * dt * 38.5;
-      /*
-        mag_x = magReadX*cos(pitch) + magReadY*sin(roll)*sin(pitch) +
-        magReadZ*cos(roll)*sin(pitch)
-        mag_y = magReadY * cos(roll) - magReadZ * sin(roll)
-        yaw = 180 * atan2(-mag_y,mag_x)/M_PI;
-      */
-
-      // Magnetometer
-      Magnetometer.RegRead();
+  // Magnetometer
+  Magnetometer.RegRead();
   magnetometerXYZ[0] = Magnetometer.readMagnetometerX();
   magnetometerXYZ[1] = Magnetometer.readMagnetometerY();
   magnetometerXYZ[2] = Magnetometer.readMagnetometerZ();
+
+  // Yaw
+  //* D = arctan(yGaussData/xGaussData)∗(180/π)
+  /*
+  Direction (y>0) = 90 - [arcTAN(x/y)]*180/π
+  Direction (y<0) = 270 - [arcTAN(x/y)]*180/π
+  Direction (y=0, x<0) = 180.0
+  Direction (y=0, x>0) = 0.0
+  */
+  if (magnetometerXYZ[1] > 0) {
+    anglePRY[2] = 90 - atan(magnetometerXYZ[0] / magnetometerXYZ[1]) * 180 / PI;
+  } else if (magnetometerXYZ[1] < 0) {
+    anglePRY[2] =
+        270 - atan(magnetometerXYZ[0] / magnetometerXYZ[1]) * 180 / PI;
+  } else if (magnetometerXYZ[1] == 0 && magnetometerXYZ[0] < 0) {
+    anglePRY[2] = 180;
+  } else if (magnetometerXYZ[1] == 0 && magnetometerXYZ[0] > 0) {
+    anglePRY[2] = 0;
+  }
+
+  // anglePRY[2] = 180 * atan2(magnetometerXYZ[1], magnetometerXYZ[0]) / PI;
 }
 
 void IMU::readValues() {
