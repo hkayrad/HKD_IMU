@@ -29,7 +29,7 @@ void IMU::startIMU(int calibrationDelay) {
   calibrateGyro(calibrationDelay);    // Calibrate gyro
   initMagnetometer(calibrationDelay); // Initialize magnetometer
 
-  anglePRY[2] = 0; // Set yaw angle to 0
+  telemetryData.anglePRY[2] = 0; // Set yaw angle to 0
 }
 
 void IMU::initMagnetometer(int calibrationDelay) {
@@ -48,7 +48,7 @@ void IMU::calibrateGyro(int calibrationDelay) {
   int gyroCalibrationIteration = 0;
 
   for (int i = 0; i < 3; i++) { // Set gyro error values to 0
-    gyroErrorPRY[i] = 0;
+    telemetryData.gyroErrorPRY[i] = 0;
   }
 
   for (gyroCalibrationIteration = 0; gyroCalibrationIteration < 2000;
@@ -57,25 +57,25 @@ void IMU::calibrateGyro(int calibrationDelay) {
     IntegratedIMU.readAllAxesFloatData(allAxesFloatData);
     for (int i = 0; i < 3;
          i++) { // Assign values to their corresponding variables
-      gyroErrorPRY[i] += allAxesFloatData[i];
+      telemetryData.gyroErrorPRY[i] += allAxesFloatData[i];
     }
     delete[] allAxesFloatData; // Free the memory of allAxes
     delay(1);
   }
 
   for (int i = 0; i < 3; i++) { // Calculate average gyro error values
-    gyroErrorPRY[i] /= gyroCalibrationIteration;
+    telemetryData.gyroErrorPRY[i] /= gyroCalibrationIteration;
   }
 
   Serial.println("Gyro calibration finished");
 }
 
 void IMU::calculateAngle() {
-  anglePRY[0] =
-      atan(accelG[1] / (sqrt(accelG[0] * accelG[0] + accelG[2] * accelG[2]))) *
+  telemetryData.anglePRY[0] =
+      atan(telemetryData.accelG[1] / (sqrt(telemetryData.accelG[0] * telemetryData.accelG[0] + telemetryData.accelG[2] * telemetryData.accelG[2]))) *
       180 / PI;
-  anglePRY[1] =
-      -atan(accelG[0] / (sqrt(accelG[1] * accelG[1] + accelG[2] * accelG[2]))) *
+  telemetryData.anglePRY[1] =
+      -atan(telemetryData.accelG[0] / (sqrt(telemetryData.accelG[1] * telemetryData.accelG[1] + telemetryData.accelG[2] * telemetryData.accelG[2]))) *
       180 / PI;
   /*
     mag_x = magReadX*cos(pitch) + magReadY*sin(roll)*sin(pitch) +
@@ -86,9 +86,9 @@ void IMU::calculateAngle() {
 
   // Magnetometer
   Magnetometer.RegRead();
-  magnetometerXYZ[0] = Magnetometer.readMagnetometerX();
-  magnetometerXYZ[1] = Magnetometer.readMagnetometerY();
-  magnetometerXYZ[2] = Magnetometer.readMagnetometerZ();
+  telemetryData.magnetometer[0] = Magnetometer.readMagnetometerX();
+  telemetryData.magnetometer[1] = Magnetometer.readMagnetometerY();
+  telemetryData.magnetometer[2] = Magnetometer.readMagnetometerZ();
 
   // Yaw
   //* D = arctan(yGaussData/xGaussData)∗(180/π)
@@ -98,49 +98,49 @@ void IMU::calculateAngle() {
   Direction (y=0, x<0) = 180.0
   Direction (y=0, x>0) = 0.0
   */
-  if (magnetometerXYZ[1] > 0) {
-    anglePRY[2] = 90 - atan(magnetometerXYZ[0] / magnetometerXYZ[1]) * 180 / PI;
-  } else if (magnetometerXYZ[1] < 0) {
-    anglePRY[2] =
-        270 - atan(magnetometerXYZ[0] / magnetometerXYZ[1]) * 180 / PI;
-  } else if (magnetometerXYZ[1] == 0 && magnetometerXYZ[0] < 0) {
-    anglePRY[2] = 180;
-  } else if (magnetometerXYZ[1] == 0 && magnetometerXYZ[0] > 0) {
-    anglePRY[2] = 0;
+  if (telemetryData.magnetometer[1] > 0) {
+    telemetryData.anglePRY[2] = 90 - atan(telemetryData.magnetometer[0] / telemetryData.magnetometer[1]) * 180 / PI;
+  } else if (telemetryData.magnetometer[1] < 0) {
+    telemetryData.anglePRY[2] =
+        270 - atan(telemetryData.magnetometer[0] / telemetryData.magnetometer[1]) * 180 / PI;
+  } else if (telemetryData.magnetometer[1] == 0 && telemetryData.magnetometer[0] < 0) {
+    telemetryData.anglePRY[2] = 180;
+  } else if (telemetryData.magnetometer[1] == 0 && telemetryData.magnetometer[0] > 0) {
+    telemetryData.anglePRY[2] = 0;
   }
 
   // anglePRY[2] = 180 * atan2(magnetometerXYZ[1], magnetometerXYZ[0]) / PI;
 }
 
 void IMU::readValues() {
-  tZero = millis();
+  telemetryData.tZero = millis();
   // Gyro & Accelerometer
   float *allAxesFloatData = new float[7]; // All axes float values
   IntegratedIMU.readAllAxesFloatData(allAxesFloatData);
   for (int i = 0; i < 3;
        i++) { // Assign values to their corresponding variables
-    gyroPRY[i] = ((allAxesFloatData[i] - //! Primitive error filtering
-                   gyroErrorPRY[i]) > 1 ||
+    telemetryData.gyroPRY[i] = ((allAxesFloatData[i] - //! Primitive error filtering
+                   telemetryData.gyroErrorPRY[i]) > 1 ||
                   (allAxesFloatData[i] - // TODO: Change this filtering with a
                                          // kalman filter
-                   gyroErrorPRY[i]) < -1)
-                     ? allAxesFloatData[i] - gyroErrorPRY[i]
+                   telemetryData.gyroErrorPRY[i]) < -1)
+                     ? allAxesFloatData[i] - telemetryData.gyroErrorPRY[i]
                      : 0;
-    accelG[i] = (allAxesFloatData[i + 3]); // Error correction
-    accelMps2[i] = accelG[i] * g;          // Convert acceleration to m/s^2
+    telemetryData.accelG[i] = (allAxesFloatData[i + 3]); // Error correction
+    telemetryData.accelMps2[i] = telemetryData.accelG[i] * g;          // Convert acceleration to m/s^2
   }
 
   calculateAngle();
 
   kalmanFilter.kalman_1d(kalmanFilter.KalmanAnglePR[0],
-                         kalmanFilter.KalmanUncertainityAnglePR[0], gyroPRY[0],
-                         anglePRY[0]);
+                         kalmanFilter.KalmanUncertainityAnglePR[0], telemetryData.gyroPRY[0],
+                         telemetryData.anglePRY[0]);
   kalmanFilter.KalmanAnglePR[0] = kalmanFilter.Kalman1DOutput[0];
   kalmanFilter.KalmanUncertainityAnglePR[0] = kalmanFilter.Kalman1DOutput[1];
 
   kalmanFilter.kalman_1d(kalmanFilter.KalmanAnglePR[1],
-                         kalmanFilter.KalmanUncertainityAnglePR[1], gyroPRY[1],
-                         anglePRY[1]);
+                         kalmanFilter.KalmanUncertainityAnglePR[1], telemetryData.gyroPRY[1],
+                         telemetryData.anglePRY[1]);
   kalmanFilter.KalmanAnglePR[1] = kalmanFilter.Kalman1DOutput[0];
   kalmanFilter.KalmanUncertainityAnglePR[1] = kalmanFilter.Kalman1DOutput[1];
 
@@ -148,20 +148,20 @@ void IMU::readValues() {
 }
 
 void IMU::plotValuesToThePlotter() { // Plot values to the plotter
-  Serial.println(">Gyro Pitch [°/s]: " + String(gyroPRY[0]));
-  Serial.println(">Gyro Roll [°/s]: " + String(gyroPRY[1]));
-  Serial.println(">Gyro Yaw [°/s]: " + String(gyroPRY[2]));
-  Serial.println(">Accel X [m/s^2]: " + String(accelMps2[0]));
-  Serial.println(">Accel Y [m/s^2]: " + String(accelMps2[1]));
-  Serial.println(">Accel Z [m/s^2]: " + String(accelMps2[2]));
-  Serial.println(">Angle Pitch [°]: " + String(anglePRY[0]));
-  Serial.println(">Angle Roll [°]: " + String(anglePRY[1]));
-  Serial.println(">Angle Yaw [°]: " + String(anglePRY[2]));
+  Serial.println(">Gyro Pitch [°/s]: " + String(telemetryData.gyroPRY[0]));
+  Serial.println(">Gyro Roll [°/s]: " + String(telemetryData.gyroPRY[1]));
+  Serial.println(">Gyro Yaw [°/s]: " + String(telemetryData.gyroPRY[2]));
+  Serial.println(">Accel X [m/s^2]: " + String(telemetryData.accelMps2[0]));
+  Serial.println(">Accel Y [m/s^2]: " + String(telemetryData.accelMps2[1]));
+  Serial.println(">Accel Z [m/s^2]: " + String(telemetryData.accelMps2[2]));
+  Serial.println(">Angle Pitch [°]: " + String(telemetryData.anglePRY[0]));
+  Serial.println(">Angle Roll [°]: " + String(telemetryData.anglePRY[1]));
+  Serial.println(">Angle Yaw [°]: " + String(telemetryData.anglePRY[2]));
   Serial.println(">Kalman Angle Pitch [°]: " +
                  String(kalmanFilter.KalmanAnglePR[0]));
   Serial.println(">Kalman Angle Roll [°]: " +
                  String(kalmanFilter.KalmanAnglePR[1]));
-  Serial.println(">Magnetometer X [mG]: " + String(magnetometerXYZ[0]));
-  Serial.println(">Magnetometer Y [mG]: " + String(magnetometerXYZ[1]));
-  Serial.println(">Magnetometer Z [mG]: " + String(magnetometerXYZ[2]));
+  Serial.println(">Magnetometer X [mG]: " + String(telemetryData.magnetometer[0]));
+  Serial.println(">Magnetometer Y [mG]: " + String(telemetryData.magnetometer[1]));
+  Serial.println(">Magnetometer Z [mG]: " + String(telemetryData.magnetometer[2]));
 }
