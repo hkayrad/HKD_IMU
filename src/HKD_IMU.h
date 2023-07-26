@@ -23,6 +23,12 @@ for such a notice.
 //* LOCAL LIBRARIES
 #include "HKD_KalmanFilter.h"
 
+struct telemetry {
+  float gyroPRY[3], gyroErrorPRY[3], accelG[3], accelMps2[3], anglePRY[3];
+  int magnetometer[3];
+  unsigned long tZero;
+};
+
 class IMU {
 public:
   IMU();
@@ -31,8 +37,8 @@ public:
                          // Deneyap_6EksenAtaletselOlcumBirimi.h
   MAGNETOMETER Magnetometer; // Create Magnetometer object from
                              // Deneyap_9EksenAtaletselOlcumBirimi.h
-
-  float *gyroPRY =
+  struct telemetry telemetryData;
+  /*float *gyroPRY =
       new float[3]; // Gyro values //? P: Pitch, R: Roll, Y: Yaw, Units: deg/s
   float *gyroErrorPRY = new float[3]; // Gyro error values
   float *accelG = new float[3];    // Acceleration values //? X: East-West, Y:
@@ -41,7 +47,7 @@ public:
   float *anglePRY =
       new float[3]; // Angle values //? P: Pitch, R: Roll, Units: deg
   int *magnetometerXYZ = new int[3]; // Magnetometer values
-  unsigned long tZero;
+  unsigned long tZero;*/
 
   //? Runs once
   void startIMU(int);
