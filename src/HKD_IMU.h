@@ -60,7 +60,7 @@ private:
   void initMagnetometer(int);
   void calibrateGyro(int);
   void calculateAngle();
-  const float g = 9.80665; // Gravitational acceleration [m/s^2];
+  const float g = 9.8066; // Gravitational acceleration [m/s^2];
 };
 
 #endif
